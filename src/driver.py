@@ -4,18 +4,18 @@ from cloudshell.core.context.error_handling_context import ErrorHandlingContext
 from cloudshell.devices.driver_helper import get_api
 from cloudshell.devices.autoload.autoload_builder import AutoloadDetailsBuilder
 from cloudshell.devices.driver_helper import get_logger_with_thread_id
+from cloudshell.devices.standards.traffic.virtual import autoload_structure
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
 from cloudshell.cp.vcenter.common.vcenter.vmomi_service import pyVmomiService
 from pyVim.connect import SmartConnect, Disconnect
 from pyVmomi import vim
 
 from cloudshell.traffic.teravm.vblade.configuration_attributes_structure import TeraVMTrafficGeneratorVBladeResource
-from cloudshell.traffic.teravm.vblade.autoload import models
 from cloudshell.traffic.virtual.resource_driver_interface import VirtualTrafficGeneratorResourceDriverInterface
 from cloudshell.traffic.virtual.runners.connect_child_resources import ConnectChildResourcesRunner
 
 
-MODEL_PORT = "TeraVM Virtual Traffic Generator Port"
+MODEL_PORT = "TeraVM Virtual Blade.VirtualTrafficGeneratorPort"
 VCENTER_RESOURCE_USER_ATTR = "User"
 VCENTER_RESOURCE_PASSWORD_ATTR = "Password"
 
@@ -105,9 +105,9 @@ class TeraVMVirtualBladeDriver(ResourceDriverInterface, VirtualTrafficGeneratorR
                                 .format(vblade_resource.tvm_comms_network))
 
             logger.info("Found interfaces on the device: {}".format(phys_interfaces))
-            module_res = models.TeraVMModule(shell_name="",
-                                             name="Module {}".format(comms_mac_addr.replace(":", "-")),
-                                             unique_id=hash(comms_mac_addr))
+            module_res = autoload_structure.Module(shell_name=self.SHELL_NAME,
+                                                   name="Module {}".format(comms_mac_addr.replace(":", "-")),
+                                                   unique_id=hash(comms_mac_addr))
 
             logger.info("Updating resource address for the module to {}".format(comms_mac_addr))
             cs_api.UpdateResourceAddress(context.resource.fullname, comms_mac_addr)
@@ -115,9 +115,9 @@ class TeraVMVirtualBladeDriver(ResourceDriverInterface, VirtualTrafficGeneratorR
             for port_number, phys_interface in enumerate(phys_interfaces, start=1):
                 network_adapter_number = phys_interface.deviceInfo.label.lower().strip("network adapter ")
                 unique_id = hash(phys_interface.macAddress)
-                port_res = models.TeraVMPort(shell_name="",
-                                             name="Port {}".format(port_number),
-                                             unique_id=unique_id)
+                port_res = autoload_structure.Port(shell_name=self.SHELL_NAME,
+                                                   name="Port {}".format(port_number),
+                                                   unique_id=unique_id)
 
                 port_res.mac_address = phys_interface.macAddress
                 port_res.requested_vnic_name = network_adapter_number
@@ -160,10 +160,9 @@ class TeraVMVirtualBladeDriver(ResourceDriverInterface, VirtualTrafficGeneratorR
 
 if __name__ == "__main__":
     import mock
-    from cloudshell.shell.core.context import ResourceCommandContext, ResourceContextDetails, ReservationContextDetails
+    from cloudshell.shell.core.driver_context import ResourceCommandContext, ResourceContextDetails, ReservationContextDetails
 
     address = '192.168.42.222'
-
     user = 'cli'
     password = 'diversifEye'
     port = 443
@@ -171,14 +170,16 @@ if __name__ == "__main__":
     auth_key = 'h8WRxvHoWkmH8rLQz+Z/pg=='
     api_port = 8029
 
-    context = ResourceCommandContext()
-    context.resource = ResourceContextDetails()
-    context.resource.name = 'dd_5915-07f0'
-    context.resource.fullname = 'dd_5915-07f0'
-    context.reservation = ReservationContextDetails()
-    context.reservation.reservation_id = '0cc17f8c-75ba-495f-aeb5-df5f0f9a0e97'
+    "CS_VirtualTrafficGeneratorPort.MAC Address"
+
+    context = ResourceCommandContext(*(None,) * 4)
+    context.resource = ResourceContextDetails(*(None,) * 13)
+    context.resource.name = "TVM-M-14.1_91b5-8c42"
+    context.resource.fullname = "TVM-M-14.1_91b5-8c42"
+    context.reservation = ReservationContextDetails(*(None, ) * 7)
+    context.reservation.reservation_id = "97d27e21-a58e-4ed8-8869-531c38d78c42"
     context.resource.attributes = {}
-    for attr, value in [("TVM Comms Network", ""),
+    for attr, value in [("TVM Comms Network", "TVM_Comms"),
                         ("TVM MGMT Network", "")]:
 
         context.resource.attributes["{}.{}".format(TeraVMVirtualBladeDriver.SHELL_NAME, attr)] = value
@@ -192,7 +193,7 @@ if __name__ == "__main__":
         }))
 
     context.connectivity = mock.MagicMock()
-    context.connectivity.server_address = "192.168.85.20"
+    context.connectivity.server_address = "192.168.85.22"
 
     dr = TeraVMVirtualBladeDriver()
     dr.initialize(context)
@@ -202,3 +203,5 @@ if __name__ == "__main__":
     for resource in result.resources:
         print resource.__dict__
 
+    for attr in result.attributes:
+        print attr.__dict__

@@ -1,8 +1,8 @@
 tosca_definitions_version: tosca_simple_yaml_1_0
 
 metadata:
-  template_name: Teravmvirtualblade
-  template_author: Anonymous
+  template_name: TeraVM Virtual Blade
+  template_author: Quali
   template_version: 0.1.0
   template_icon: shell-icon.png
 
@@ -10,12 +10,11 @@ description: >
   TOSCA based deployed app shell
 
 imports:
-  - cloudshell_standard: cloudshell_deployed_app_standard_1_0_3.yaml
+  - cloudshell_standard: cloudshell_virtual_traffic_generator_standard_1_0_0.yaml
 
 node_types:
-
   vendor.switch.TeraVM Virtual Blade:
-    derived_from: cloudshell.nodes.DeployedApp
+    derived_from: cloudshell.VirtualTrafficGeneratorChassis.nodes.VirtualTrafficGeneratorModule
     properties:
       TVM Comms Network:
         type: string
